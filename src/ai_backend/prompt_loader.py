@@ -1,14 +1,12 @@
 """Loads and manages AI prompts from a specified directory."""
 import datetime
-import os
 from pathlib import Path
-from typing import Any, Dict, TypeAlias, Union, cast
+from typing import Any, Dict, cast
 
 import yaml
 from langchain_core.prompts import ChatPromptTemplate
 
-# Wide type for maximum compatibility
-PathLike: TypeAlias = Union[str, os.PathLike[str]]
+from ai_backend.types import PathLike
 
 PROMPT_KEY = "prompts"
 DEFAULT_PROMPT_STRUCTURE = {
