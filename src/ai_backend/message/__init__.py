@@ -8,6 +8,7 @@ from typing import Any
 from langchain_core.messages.content import ImageContentBlock, create_image_block
 
 from ai_backend.message.image_loader import (
+    OPTIMIZED_MIME_TYPE,
     decode_base64_to_Image,
     encode_image_to_base64,
     optimize_image,
@@ -40,7 +41,7 @@ class MessageLoader:
         return ImageData(
             base64_content=optimized_base64,
             filename=image_data.filename,
-            mime_type=image_data.mime_type,
+            mime_type=OPTIMIZED_MIME_TYPE,
             page_number=image_data.page_number,
             selected=image_data.selected,
             processed=image_data.processed,
@@ -107,13 +108,17 @@ class MessageLoader:
         """Converts ImageData to a format suitable for LangChain content."""
         if optimize:
             image_data = MessageLoader.optimize_image_data(image_data, max_dimension)
+        else:
+            image_data = image_data
         encoded_string = image_data.base64_content
         filename = image_data.filename
         mime_type = image_data.mime_type
+        if not mime_type:
+            raise ValueError("MIME type is required to convert image data.")
         return create_image_block(
             base64=encoded_string,
             filename=filename,
-            content_type=mime_type,
+            mime_type=mime_type,
         )
 
 
