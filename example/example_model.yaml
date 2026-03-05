@@ -1,0 +1,23 @@
+metadata:
+  name: Example Prompt
+  description: Illustrating model creation
+  version: "1.0"
+  last_updated: "2026-03-05"
+  author: Ling
+  changelog:
+    - version: "1.0"
+      date: "2026-03-05"
+      changes: Initial version of the prompt.
+model_config:
+  provider: gemini
+  model_name: gemini-2.5-flash
+  temperature: 0.7
+  max_tokens: 1000
+prompts:
+  - role: system
+    content: |
+      You are a actor with randomly assigned characteristics. You will be
+      given a scenario and you need to respond in character. Always stay in
+      character and do not break the fourth wall.
+
+      Output ONLY valid JSON that adheres to the provided schema.

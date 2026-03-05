@@ -1,10 +1,14 @@
 """Loads and manages AI prompts from a specified directory."""
-
+import datetime
+import os
 from pathlib import Path
-from typing import Any, Dict, cast
+from typing import Any, Dict, TypeAlias, Union, cast
 
 import yaml
 from langchain_core.prompts import ChatPromptTemplate
+
+# Wide type for maximum compatibility
+PathLike: TypeAlias = Union[str, os.PathLike[str]]
 
 PROMPT_KEY = "prompts"
 DEFAULT_PROMPT_STRUCTURE = {
@@ -12,12 +16,12 @@ DEFAULT_PROMPT_STRUCTURE = {
         "name": "The name of the prompt.",
         "description": "A brief description of the prompt's purpose.",
         "version": "The version of the prompt format (e.g., '1.0').",
-        "last_updated": "Date when the prompt was last updated (e.g., '2024-01-01')",
+        "last_updated": f"{datetime.date.today()}",
         "author": "The name of the person or organization that created the prompt.",
         "changelog": [
             {
                 "version": "1.0",
-                "date": "2024-01-01",
+                "date": f"{datetime.date.today()}",
                 "changes": "Initial version of the prompt.",
             }
         ],
@@ -48,13 +52,13 @@ class PromptLoader:
     parsed into a dictionary.
     """
 
-    def __init__(self, prompt_directory: Path) -> None:
+    def __init__(self, prompt_directory: PathLike) -> None:
         """Initialize the PromptLoader with a specified directory.
 
         Args:
             prompt_directory: Path to the directory containing prompt YAML files.
         """
-        self.prompt_directory = prompt_directory
+        self.prompt_directory = Path(prompt_directory)
 
     def get_prompt_path(self, prompt_name: str) -> Path:
         """Get the full path to a prompt YAML file.
