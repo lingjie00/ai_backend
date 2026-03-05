@@ -5,7 +5,6 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import yaml
-from langchain_core.prompts import ChatPromptTemplate
 
 from ai_backend.prompt_loader import (
     DEFAULT_PROMPT_STRUCTURE,
@@ -78,7 +77,9 @@ class TestPromptLoader(unittest.TestCase):
             self.assertTrue(content.startswith("b: 1"))
 
     def test_save_prompt_yaml_with_autofix(self):
-        """Test saving a prompt dictionary to a YAML file with automatic '.yaml' extension."""
+        """Test saving a prompt dictionary to a YAML file.
+
+        It will create automatic '.yaml' extension."""
         prompt_name = "test_save"
         prompt_data = {"save_key": "save_value"}
         self.loader.save_prompt_yaml(prompt_name, prompt_data)

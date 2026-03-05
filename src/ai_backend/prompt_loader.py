@@ -12,7 +12,7 @@ DEFAULT_PROMPT_STRUCTURE = {
         "name": "The name of the prompt.",
         "description": "A brief description of the prompt's purpose.",
         "version": "The version of the prompt format (e.g., '1.0').",
-        "last_updated": "The date when the prompt was last updated (e.g., '2024-01-01').",
+        "last_updated": "Date when the prompt was last updated (e.g., '2024-01-01')",
         "author": "The name of the person or organization that created the prompt.",
         "changelog": [
             {
