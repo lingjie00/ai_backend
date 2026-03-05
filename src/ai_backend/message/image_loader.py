@@ -10,6 +10,8 @@ from PIL import Image
 from ai_backend.types import PathLike
 
 ENCODING = "utf-8"
+OPTIMIZED_IMAGE_TYPE = "jpeg"
+OPTIMIZED_MIME_TYPE = f"image/{OPTIMIZED_IMAGE_TYPE}"
 
 
 def _encode_image_bytes_to_base64(image_bytes: bytes) -> str:
@@ -21,7 +23,7 @@ def _encode_image_Image_to_base64(image: Image.Image) -> str:
     """Encodes a PIL Image object to a base64 string."""
 
     buffered = BytesIO()
-    image.save(buffered, format="PNG")
+    image.save(buffered, format=OPTIMIZED_IMAGE_TYPE.upper())
     return _encode_image_bytes_to_base64(buffered.getvalue())
 
 

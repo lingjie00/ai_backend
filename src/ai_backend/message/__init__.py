@@ -5,9 +5,10 @@ import re
 from pathlib import Path
 from typing import Any
 
-from langchain_core.messages.content import create_image_block
+from langchain_core.messages.content import ImageContentBlock, create_image_block
 
 from ai_backend.message.image_loader import (
+    OPTIMIZED_MIME_TYPE,
     decode_base64_to_Image,
     encode_image_to_base64,
     optimize_image,
@@ -40,7 +41,7 @@ class MessageLoader:
         return ImageData(
             base64_content=optimized_base64,
             filename=image_data.filename,
-            mime_type=image_data.mime_type,
+            mime_type=OPTIMIZED_MIME_TYPE,
             page_number=image_data.page_number,
             selected=image_data.selected,
             processed=image_data.processed,
@@ -67,7 +68,7 @@ class MessageLoader:
     def convert_image_to_image_data(
         inputs: Any,
         filename: str = "",
-        mime_type: str | None = None,
+        mime_type: str = "",
         page_number: int = 1,
     ) -> ImageData:
         """Converts various image input types to an ImageData object."""
@@ -76,9 +77,9 @@ class MessageLoader:
             filepath = Path(inputs)
             filename = filepath.name if filename == "" else filename
             try:
-                mime_type = mimetypes.guess_type(filepath)[0]
+                mime_type = mimetypes.guess_type(filepath)[0] or ""
             except Exception as e:
-                if mime_type is None:
+                if mime_type == "":
                     raise ValueError(
                         f"Could not determine MIME type for the image at {filepath}. "
                         "Please provide the MIME type explicitly. "
@@ -90,7 +91,7 @@ class MessageLoader:
         else:
             base64_content = str(inputs)
 
-        if mime_type is None:
+        if mime_type == "":
             raise ValueError("Could not determine MIME type for the image.")
 
         return ImageData(
@@ -103,17 +104,21 @@ class MessageLoader:
     @staticmethod
     def convert_image_data_to_langchain_content(
         image_data: ImageData, max_dimension: int = 1024, optimize: bool = True
-    ) -> Any:
-        """Converts a base64 string to a format suitable for LangChain content."""
+    ) -> ImageContentBlock:
+        """Converts ImageData to a format suitable for LangChain content."""
         if optimize:
             image_data = MessageLoader.optimize_image_data(image_data, max_dimension)
+        else:
+            image_data = image_data
         encoded_string = image_data.base64_content
         filename = image_data.filename
         mime_type = image_data.mime_type
+        if not mime_type:
+            raise ValueError("MIME type is required to convert image data.")
         return create_image_block(
             base64=encoded_string,
             filename=filename,
-            content_type=mime_type,
+            mime_type=mime_type,
         )
 
 

@@ -14,6 +14,7 @@ try:
 except ImportError:
     ChatGoogleGenerativeAI = Any  # type: ignore
 
+from langchain_core.prompts import MessagesPlaceholder
 from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel
 
@@ -63,7 +64,9 @@ class LangChainClient:
         self,
         prompt_loader: PromptLoader,
         model_name: str,
-        additional_prompts: list[BaseMessage | tuple[str, str]] = list(),
+        additional_prompts: list[
+            BaseMessage | tuple[str, str] | MessagesPlaceholder
+        ] = list(),
         api_key: str = "",
         structured_output_model: type[BaseModel] | None = None,
     ) -> None:
