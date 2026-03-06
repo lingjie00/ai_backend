@@ -64,10 +64,17 @@ class ImageData(BaseModel):
         self.mime_type = self.mime_type.lower()
         return super().model_post_init(context)
 
+    def to_bytes(self) -> bytes:
+        """Converts the base64 content to bytes."""
+        return base64.b64decode(self.base64_content.encode("utf-8"))
+
+    def to_bytesio(self) -> BytesIO:
+        """Converts the base64 content to a BytesIO object."""
+        return BytesIO(self.to_bytes())
+
     def to_pil_image(self) -> Image.Image:
         """Converts the base64 content to a PIL Image object."""
-        image_bytes = self.base64_content.encode("utf-8")
-        return Image.open(BytesIO(base64.b64decode(image_bytes)))
+        return Image.open(self.to_bytesio())
 
     def show(self) -> None:
         """Displays the image using PIL."""
