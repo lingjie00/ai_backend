@@ -7,7 +7,7 @@ import fitz  # PyMuPDF
 from ai_backend.types import PathLike
 
 PDF_MIME_TYPES = "application/pdf"
-CONVERTED_IMAGE_MIME_TYPE = "image/png"
+CONVERTED_IMAGE_MIME_TYPE = "image/jpg"
 
 
 def _encode_pdf_byes_to_images_bytes(pdf_bytes: bytes, dpi: int = 200) -> list[bytes]:
@@ -44,7 +44,7 @@ def _encode_pdf_byes_to_images_bytes(pdf_bytes: bytes, dpi: int = 200) -> list[b
             pix = page.get_pixmap(matrix=mat)
 
             # Convert pixmap to PIL Image
-            img_data = pix.tobytes("png")
+            img_data = pix.tobytes("jpg")
             images.append(img_data)
 
     finally:
