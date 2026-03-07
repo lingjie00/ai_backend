@@ -12,6 +12,7 @@ from ai_backend.message import (
     is_base64_regex,
 )
 from ai_backend.message.image_loader import (
+    OPTIMIZED_MIME_TYPE,
     annotate_image_with_bounding_box,
     decode_base64_to_Image,
     normalize_bbox,
@@ -38,7 +39,7 @@ class TestMessage(unittest.TestCase):
             self.assertIsInstance(image_data, ImageData)
             self.assertIsNotNone(image_data.base64_content)
             self.assertEqual(image_data.filename, Path(temp_image_file.name).name)
-            self.assertEqual(image_data.mime_type, "image/png")
+            self.assertEqual(image_data.mime_type, OPTIMIZED_MIME_TYPE)
 
     def test_convert_pdf_to_image_data(self):
         with tempfile.NamedTemporaryFile(suffix=".pdf") as temp_pdf_file:
