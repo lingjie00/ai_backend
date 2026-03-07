@@ -137,7 +137,7 @@ class MessageLoader:
         font_shift_scale: float = 0.05,
     ) -> ImageData:
         """Annotates the image with a bounding box and returns new ImageData."""
-        image = decode_base64_to_Image(image_data.base64_content)
+        image = image_data.to_pil_image()
         annotated_image = annotate_image_with_bounding_box(
             image,
             bounding_box,
