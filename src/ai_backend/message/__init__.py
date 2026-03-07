@@ -3,17 +3,20 @@
 import mimetypes
 import re
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from langchain_core.messages.content import ImageContentBlock, create_image_block
 
 from ai_backend.message.image_loader import (
     OPTIMIZED_MIME_TYPE,
+    annotate_image_with_bounding_box,
     decode_base64_to_Image,
     encode_image_to_base64,
+    normalize_bbox,
+    normalized_to_crop_tuple,
     optimize_image,
 )
-from ai_backend.message.image_model import BoundingBox, ImageData
+from ai_backend.message.image_model import BoundingBox, ImageData, ImageSize
 from ai_backend.message.pdf_loader import (
     CONVERTED_IMAGE_MIME_TYPE,
     encode_pdf_to_images_bytes,
@@ -119,6 +122,66 @@ class MessageLoader:
             base64=encoded_string,
             filename=filename,
             mime_type=mime_type,
+        )
+
+    @staticmethod
+    def annotate_image_with_bounding_box(
+        image_data: ImageData, bounding_box: BoundingBox
+    ) -> ImageData:
+        """Annotates the image with a bounding box and returns new ImageData."""
+        image = decode_base64_to_Image(image_data.base64_content)
+        annotated_image = annotate_image_with_bounding_box(image, bounding_box)
+        annotated_base64 = encode_image_to_base64(annotated_image)
+        return ImageData(
+            base64_content=annotated_base64,
+            filename=image_data.filename,
+            mime_type=image_data.mime_type,
+            page_number=image_data.page_number,
+            selected=image_data.selected,
+            processed=image_data.processed,
+        )
+
+    @staticmethod
+    def crop_image_with_bounding_box(
+        image_data: ImageData, bounding_box: BoundingBox
+    ) -> ImageData:
+        """Crops the image using the bounding box and returns new ImageData."""
+        image = decode_base64_to_Image(image_data.base64_content)
+        image_size = ImageSize(width=image.width, height=image.height)
+        crop_tuple = normalized_to_crop_tuple(
+            bounding_box,
+            image_size,
+        )
+        cropped_image = image.crop(crop_tuple)
+        cropped_base64 = encode_image_to_base64(cropped_image)
+        return ImageData(
+            base64_content=cropped_base64,
+            filename=image_data.filename,
+            mime_type=image_data.mime_type,
+            page_number=image_data.page_number,
+            selected=image_data.selected,
+            processed=image_data.processed,
+        )
+
+    @staticmethod
+    def crop_image_with_bounding_box_dict(
+        image_data: ImageData,
+        bounding_box: dict[Literal["left", "top", "width", "height"], int],
+    ) -> ImageData:
+        """Crops the image using the bounding box dict and returns new ImageData."""
+        image = decode_base64_to_Image(image_data.base64_content)
+        image_size = ImageSize(width=image.width, height=image.height)
+        normalized_box = normalize_bbox(bounding_box, image_size)
+        crop_tuple = normalized_to_crop_tuple(normalized_box, image_size)
+        cropped_image = image.crop(crop_tuple)
+        cropped_base64 = encode_image_to_base64(cropped_image)
+        return ImageData(
+            base64_content=cropped_base64,
+            filename=image_data.filename,
+            mime_type=image_data.mime_type,
+            page_number=image_data.page_number,
+            selected=image_data.selected,
+            processed=image_data.processed,
         )
 
 

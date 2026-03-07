@@ -8,6 +8,13 @@ from PIL import Image
 from pydantic import BaseModel, Field
 
 
+class ImageSize(BaseModel):
+    """Model representing the dimensions of an image."""
+
+    width: int = Field(..., description="Width of the image in pixels", ge=1)
+    height: int = Field(..., description="Height of the image in pixels", ge=1)
+
+
 class BoundingBox(BaseModel):
     """Bounding box covering the question and related student working region."""
 
@@ -59,6 +66,12 @@ class ImageData(BaseModel):
         default_factory=lambda: False,
         description="Indicates if the image has been processed",
     )
+
+    @property
+    def size(self) -> ImageSize:
+        """Returns the dimensions of the image."""
+        image = self.to_pil_image()
+        return ImageSize(width=image.width, height=image.height)
 
     def model_post_init(self, context: Any) -> None:
         self.mime_type = self.mime_type.lower()
