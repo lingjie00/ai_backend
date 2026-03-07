@@ -3,10 +3,11 @@
 import base64
 from io import BytesIO
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 
+from ai_backend.message.image_model import BoundingBox, ImageSize
 from ai_backend.types import PathLike
 
 ENCODING = "utf-8"
@@ -79,3 +80,111 @@ def optimize_image(
     elif format.upper() == "JPEG" and image.mode != "RGB":
         image = image.convert("RGB")  # Ensure compatibility with JPEG format
     return image
+
+
+def annotate_image_with_bounding_box(
+    image: Image.Image,
+    bounding_box: BoundingBox,
+    label: str = "",
+    color: str = "red",
+    linewidth_scale: float = 0.005,
+    linewidth_min: int = 2,
+    fontsize_scale: float = 0.05,
+    fontsize_min: int = 20,
+    font_shift_scale: float = 0.05,
+) -> Image.Image:
+    """Draw optional bounding box overlay with question label on an image.
+
+    bounding_box: BoundingBox object with normalized coordinates (0-1)
+    label: Optional label to display on the bounding box
+    color: Color of the bounding box and label
+    linewidth_scale: Scale factor for the bounding box line width
+    linewidth_min: Minimum line width for the bounding box
+    fontsize_scale: Scale factor for the label font size
+    fontsize_min: Minimum font size for the label
+    font_shift_scale: Scale factor for shifting the label above the bounding box
+    """
+    x_min, y_min, x_max, y_max = (
+        bounding_box.x_min,
+        bounding_box.y_min,
+        bounding_box.x_max,
+        bounding_box.y_max,
+    )
+
+    annotated = image.copy()
+    draw = ImageDraw.Draw(annotated)
+    width, height = annotated.size
+
+    # Convert normalized coordinates to pixel coordinates
+    left = int(x_min * width)
+    top = int(y_min * height)
+    right = int(x_max * width)
+    bottom = int(y_max * height)
+
+    left, right = sorted((max(0, left), min(width, right)))
+    top, bottom = sorted((max(0, top), min(height, bottom)))
+    if left >= right or top >= bottom:
+        raise ValueError("Invalid bounding box with non-positive area")
+
+    line_width = max(linewidth_min, int(min(width, height) * linewidth_scale))
+    draw.rectangle([(left, top), (right, bottom)], outline=color, width=line_width)
+
+    if label:
+        shift = line_width + font_shift_scale * min(height, width)
+        text_y = max(0, top - shift)
+        font_size = max(fontsize_min, int(min(width, height) * fontsize_scale))
+        try:
+            font = ImageFont.load_default(size=font_size)
+        except TypeError:
+            font = ImageFont.load_default()
+        draw.text(
+            (left, text_y),
+            label,
+            fill=color,
+            font=font,
+        )
+
+    return annotated
+
+
+def normalized_to_crop_tuple(norm_box: BoundingBox, img_size: ImageSize):
+    """
+    norm_box: BoundingBox object with x_min, x_max, y_min, y_max (0-1)
+    img_size: ImageSize object
+    """
+    width, height = img_size.width, img_size.height
+
+    # Calculate absolute pixels
+    left = norm_box.x_min * width
+    upper = norm_box.y_min * height
+    right = norm_box.x_max * width
+    lower = norm_box.y_max * height
+
+    # PIL crop() requires integers
+    return (int(left), int(upper), int(right), int(lower))
+
+
+def normalize_bbox(
+    box: dict[Literal["left", "top", "width", "height"], int],
+    img_size: ImageSize,
+) -> BoundingBox:
+    """
+    Converts pixel coordinates from streamlit_cropper to normalized [0, 1] range.
+    box: {"left": int, "top": int, "width": int, "height": int}
+    img_size: ImageSize object
+    """
+    img_w, img_h = img_size.width, img_size.height
+
+    x_min = box["left"] / img_w
+    x_max = (box["left"] + box["width"]) / img_w
+    y_min = box["top"] / img_h
+    y_max = (box["top"] + box["height"]) / img_h
+
+    return BoundingBox.model_validate(
+        {
+            "x_min": round(x_min, 4),
+            "y_min": round(y_min, 4),
+            "x_max": round(x_max, 4),
+            "y_max": round(y_max, 4),
+        }
+    )
