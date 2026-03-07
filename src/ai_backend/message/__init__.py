@@ -52,7 +52,11 @@ class MessageLoader:
 
     @staticmethod
     def convert_pdf_to_image_data(
-        pdf_input: Any, filename: str = "", dpi: int = 300, optimize: bool = True
+        pdf_input: Any,
+        filename: str = "",
+        dpi: int = 300,
+        optimize: bool = True,
+        optimize_max_dimension: int = 1024,
     ) -> list[ImageData]:
         """Converts PDF input to a list of ImageData objects, one per page."""
         image_bytes_list = encode_pdf_to_images_bytes(pdf_input, dpi)
@@ -64,6 +68,7 @@ class MessageLoader:
                 mime_type=CONVERTED_IMAGE_MIME_TYPE,
                 page_number=i + 1,
                 optimize=optimize,
+                optimize_max_dimension=optimize_max_dimension,
             )
             image_data_list.append(image_data)
         return image_data_list
@@ -75,6 +80,7 @@ class MessageLoader:
         mime_type: str = "",
         page_number: int = 1,
         optimize: bool = True,
+        optimize_max_dimension: int = 1024,
     ) -> ImageData:
         """Converts various image input types to an ImageData object."""
         not_base64 = not is_base64_regex(str(inputs))
@@ -106,7 +112,10 @@ class MessageLoader:
             page_number=page_number,
         )
         if optimize:
-            image_data = MessageLoader.optimize_image_data(image_data)
+            image_data = MessageLoader.optimize_image_data(
+                image_data,
+                max_dimension=optimize_max_dimension,
+            )
         return image_data
 
     @staticmethod
