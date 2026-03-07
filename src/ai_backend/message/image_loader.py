@@ -23,6 +23,19 @@ def _encode_image_bytes_to_base64(image_bytes: bytes) -> str:
 def _encode_image_Image_to_base64(image: Image.Image) -> str:
     """Encodes a PIL Image object to a base64 string."""
 
+    # 1. Prepare for JPEG by removing transparency/Alpha
+    if image.mode in ("RGBA", "LA") or (
+        image.mode == "P" and "transparency" in image.info
+    ):
+        # Create white background to replace transparency
+        background = Image.new("RGB", image.size, (255, 255, 255))
+        # Use the last channel (-1) as the mask to handle both RGBA and LA
+        background.paste(image, mask=image.split()[-1])
+        image = background
+    elif image.mode != "RGB":
+        # Handles CMYK, L, etc.
+        image = image.convert("RGB")
+
     buffered = BytesIO()
     image.save(buffered, format=OPTIMIZED_IMAGE_TYPE.upper())
     return _encode_image_bytes_to_base64(buffered.getvalue())
