@@ -3,9 +3,10 @@
 import mimetypes
 import re
 from pathlib import Path
-from typing import Any, Literal
+from typing import Literal
 
 from langchain_core.messages.content import ImageContentBlock, create_image_block
+from PIL import Image
 
 from ai_backend.message.image_loader import (
     OPTIMIZED_MIME_TYPE,
@@ -24,8 +25,10 @@ from ai_backend.message.pdf_loader import (
 
 
 def is_base64_regex(s: str) -> bool:
-    # Pattern: Optional data URI prefix, then base64 chars, ending with optional padding
-    # Length must be a multiple of 4
+    # Pattern: base64 chars (min 4), ending with optional padding
+    # Length must be a multiple of 4 and string must be non-empty
+    if not s:
+        return False
     pattern = r"^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$"
     return bool(re.match(pattern, s))
 
@@ -41,18 +44,16 @@ class MessageLoader:
         image = decode_base64_to_Image(image_data.base64_content)
         optimized_image = optimize_image(image, max_dimension)
         optimized_base64 = encode_image_to_base64(optimized_image)
-        return ImageData(
-            base64_content=optimized_base64,
-            filename=image_data.filename,
-            mime_type=OPTIMIZED_MIME_TYPE,
-            page_number=image_data.page_number,
-            selected=image_data.selected,
-            processed=image_data.processed,
+        return image_data.model_copy(
+            update={
+                "base64_content": optimized_base64,
+                "mime_type": OPTIMIZED_MIME_TYPE,
+            }
         )
 
     @staticmethod
     def convert_pdf_to_image_data(
-        pdf_input: Any,
+        pdf_input: str | Path | bytes,
         filename: str = "",
         dpi: int = 300,
         optimize: bool = True,
@@ -75,7 +76,7 @@ class MessageLoader:
 
     @staticmethod
     def convert_image_to_image_data(
-        inputs: Any,
+        inputs: str | Path | bytes | Image.Image,
         filename: str = "",
         mime_type: str = "",
         page_number: int = 1,
@@ -164,14 +165,7 @@ class MessageLoader:
             font_shift_scale=font_shift_scale,
         )
         annotated_base64 = encode_image_to_base64(annotated_image)
-        return ImageData(
-            base64_content=annotated_base64,
-            filename=image_data.filename,
-            mime_type=image_data.mime_type,
-            page_number=image_data.page_number,
-            selected=image_data.selected,
-            processed=image_data.processed,
-        )
+        return image_data.model_copy(update={"base64_content": annotated_base64})
 
     @staticmethod
     def crop_image_with_bounding_box(
@@ -186,14 +180,7 @@ class MessageLoader:
         )
         cropped_image = image.crop(crop_tuple)
         cropped_base64 = encode_image_to_base64(cropped_image)
-        return ImageData(
-            base64_content=cropped_base64,
-            filename=image_data.filename,
-            mime_type=image_data.mime_type,
-            page_number=image_data.page_number,
-            selected=image_data.selected,
-            processed=image_data.processed,
-        )
+        return image_data.model_copy(update={"base64_content": cropped_base64})
 
     @staticmethod
     def crop_image_with_bounding_box_dict(
@@ -207,14 +194,7 @@ class MessageLoader:
         crop_tuple = normalized_to_crop_tuple(normalized_box, image_size)
         cropped_image = image.crop(crop_tuple)
         cropped_base64 = encode_image_to_base64(cropped_image)
-        return ImageData(
-            base64_content=cropped_base64,
-            filename=image_data.filename,
-            mime_type=image_data.mime_type,
-            page_number=image_data.page_number,
-            selected=image_data.selected,
-            processed=image_data.processed,
-        )
+        return image_data.model_copy(update={"base64_content": cropped_base64})
 
 
 __all__ = [

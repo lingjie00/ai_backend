@@ -123,6 +123,40 @@ class TestLangChainClient(unittest.TestCase):
         self.assertIn("session_id", config.get("configurable", {}))
         self.assertIsInstance(config.get("configurable", {}).get("session_id"), str)
 
+    @patch("ai_backend.langchain_client.ChatOpenAI")
+    def test_init_with_openai_client(self, mock_chat_openai: MagicMock):
+        """Test client initialization with an OpenAI model."""
+        self.model_config_data["model_config"]["provider"] = "openai"
+        self.model_config_data["model_config"]["model_name"] = "gpt-4"
+        self.mock_prompt_loader.load_prompt_yaml.return_value = self.model_config_data
+        mock_vanila_model = MagicMock()
+        mock_chat_openai.return_value = mock_vanila_model
+        self.prompt_template.__or__.return_value = "prompt | model"
+
+        client = LangChainClient(
+            prompt_loader=self.mock_prompt_loader, model_name=self.model_name
+        )
+
+        mock_chat_openai.assert_called_once()
+        self.assertEqual(client.model, "prompt | model")
+
+    @patch("ai_backend.langchain_client.ChatAnthropic")
+    def test_init_with_anthropic_client(self, mock_chat_anthropic: MagicMock):
+        """Test client initialization with an Anthropic model."""
+        self.model_config_data["model_config"]["provider"] = "anthropic"
+        self.model_config_data["model_config"]["model_name"] = "claude-3-opus"
+        self.mock_prompt_loader.load_prompt_yaml.return_value = self.model_config_data
+        mock_vanila_model = MagicMock()
+        mock_chat_anthropic.return_value = mock_vanila_model
+        self.prompt_template.__or__.return_value = "prompt | model"
+
+        client = LangChainClient(
+            prompt_loader=self.mock_prompt_loader, model_name=self.model_name
+        )
+
+        mock_chat_anthropic.assert_called_once()
+        self.assertEqual(client.model, "prompt | model")
+
 
 if __name__ == "__main__":
     unittest.main()

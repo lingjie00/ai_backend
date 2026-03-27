@@ -158,6 +158,49 @@ class TestMessage(unittest.TestCase):
             cropped_image = decode_base64_to_Image(cropped.base64_content)
             self.assertEqual(cropped_image.size, (30, 40))
 
+    def test_is_base64_regex_empty_string(self):
+        """Empty string should not be considered valid base64."""
+        self.assertFalse(is_base64_regex(""))
+
+    def test_is_base64_regex_whitespace(self):
+        """Whitespace should not be considered valid base64."""
+        self.assertFalse(is_base64_regex("   "))
+
+    def test_image_data_save_to_disk(self):
+        """Test saving ImageData to disk and reading back."""
+        with tempfile.NamedTemporaryFile(suffix=".png") as temp_image_file:
+            image = Image.new("RGB", (50, 50), color="blue")
+            image.save(temp_image_file.name)
+            image_data = MessageLoader.convert_image_to_image_data(temp_image_file.name)
+            with tempfile.TemporaryDirectory() as tmpdir:
+                saved = image_data.save_to_disk(tmpdir)
+                self.assertIsNotNone(saved.file_path)
+                self.assertTrue(saved.file_path.exists())
+                # Can still convert to PIL
+                pil_img = saved.to_pil_image()
+                self.assertEqual(pil_img.size[0], 50)
+
+    def test_image_data_is_large(self):
+        """Test the is_large property."""
+        with tempfile.NamedTemporaryFile(suffix=".png") as temp_image_file:
+            image = Image.new("RGB", (10, 10), color="red")
+            image.save(temp_image_file.name)
+            image_data = MessageLoader.convert_image_to_image_data(temp_image_file.name)
+            self.assertFalse(image_data.is_large)
+
+    def test_model_copy_preserves_fields(self):
+        """Test that model_copy in optimize preserves custom fields."""
+        with tempfile.NamedTemporaryFile(suffix=".png") as temp_image_file:
+            image = Image.new("RGB", (2000, 2000), color="red")
+            image.save(temp_image_file.name)
+            image_data = MessageLoader.convert_image_to_image_data(temp_image_file.name)
+            # Mark as selected=False to test preservation
+            image_data_modified = image_data.model_copy(update={"selected": False})
+            optimized = MessageLoader.optimize_image_data(
+                image_data_modified, max_dimension=500
+            )
+            self.assertFalse(optimized.selected)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -5,11 +5,13 @@ from enum import Enum
 from pydantic import BaseModel, Field
 
 
-class LLMProvider(str, Enum):
+class LLMProvider(Enum):
     """Supported LLM providers."""
 
     OPENAI = "openai"
     GEMINI = "gemini"
+    ANTHROPIC = "anthropic"
+    AZURE_OPENAI = "azure_openai"
 
 
 class AIModelConfig(BaseModel):

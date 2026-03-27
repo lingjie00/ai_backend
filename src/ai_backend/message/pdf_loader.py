@@ -7,10 +7,10 @@ import fitz  # PyMuPDF
 from ai_backend.types import PathLike
 
 PDF_MIME_TYPES = "application/pdf"
-CONVERTED_IMAGE_MIME_TYPE = "image/jpg"
+CONVERTED_IMAGE_MIME_TYPE = "image/jpeg"
 
 
-def _encode_pdf_byes_to_images_bytes(pdf_bytes: bytes, dpi: int = 200) -> list[bytes]:
+def _encode_pdf_bytes_to_images_bytes(pdf_bytes: bytes, dpi: int = 200) -> list[bytes]:
     """
     Convert a PDF file to a list of image bytes.
 
@@ -67,7 +67,7 @@ def _encode_pdf_path_to_image_bytes(pdf_path: PathLike, dpi: int = 200) -> list[
     pdf_path = Path(pdf_path)
     with open(pdf_path, "rb") as f:
         pdf_bytes = f.read()
-    return _encode_pdf_byes_to_images_bytes(pdf_bytes, dpi)
+    return _encode_pdf_bytes_to_images_bytes(pdf_bytes, dpi)
 
 
 def encode_pdf_to_images_bytes(
@@ -84,7 +84,7 @@ def encode_pdf_to_images_bytes(
         List of image bytes, one per page
     """
     if isinstance(pdf_input, bytes):
-        return _encode_pdf_byes_to_images_bytes(pdf_input, dpi)
+        return _encode_pdf_bytes_to_images_bytes(pdf_input, dpi)
     elif isinstance(pdf_input, (str, Path)):
         return _encode_pdf_path_to_image_bytes(pdf_input, dpi)
     else:

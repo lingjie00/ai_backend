@@ -3,7 +3,7 @@
 import base64
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Literal
+from typing import Literal
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -61,7 +61,7 @@ def decode_base64_to_Image(encoded_string: str) -> Image.Image:
     return Image.open(BytesIO(image_bytes))
 
 
-def encode_image_to_base64(inputs: Any) -> str:
+def encode_image_to_base64(inputs: bytes | Image.Image | str | Path) -> str:
     """Encodes various image input types to a base64 string."""
     if isinstance(inputs, bytes):
         return _encode_image_bytes_to_base64(inputs)

@@ -1,7 +1,7 @@
 """Loads and manages AI prompts from a specified directory."""
 import datetime
 from pathlib import Path
-from typing import Any, Dict, cast
+from typing import Any, cast
 
 import yaml
 from langchain_core.prompts import ChatPromptTemplate
@@ -71,7 +71,7 @@ class PromptLoader:
             prompt_name += ".yaml"
         return self.prompt_directory / prompt_name
 
-    def load_prompt_yaml(self, prompt_name: str) -> Dict[str, Any]:
+    def load_prompt_yaml(self, prompt_name: str) -> dict[str, Any]:
         """Load a prompt YAML file from disk.
 
         Args:
@@ -82,12 +82,10 @@ class PromptLoader:
         """
         if not prompt_name.endswith(".yaml"):
             prompt_name += ".yaml"
-        with open(
-            self.get_prompt_path(prompt_name), "r", encoding="utf-8"
-        ) as prompt_file:
-            return cast(Dict[str, Any], yaml.safe_load(prompt_file))
+        with open(self.get_prompt_path(prompt_name), encoding="utf-8") as prompt_file:
+            return cast(dict[str, Any], yaml.safe_load(prompt_file))
 
-    def save_prompt_yaml(self, prompt_name: str, prompt_data: Dict[str, Any]) -> Path:
+    def save_prompt_yaml(self, prompt_name: str, prompt_data: dict[str, Any]) -> Path:
         """Save a prompt dictionary to a YAML file.
 
         Args:
@@ -110,7 +108,7 @@ class PromptLoader:
         return self.get_prompt_path(prompt_name)
 
     def load_chat_prompt_template(
-        self, prompt_name: str, additional_prompts: list = list()
+        self, prompt_name: str, additional_prompts: list | None = None
     ) -> ChatPromptTemplate:
         """Load a prompt YAML file and convert it to a ChatPromptTemplate.
 
@@ -121,8 +119,22 @@ class PromptLoader:
         Returns:
             A ChatPromptTemplate object created from the loaded YAML prompt.
         """
+        if additional_prompts is None:
+            additional_prompts = []
         prompt_data = self.load_prompt_yaml(prompt_name)
         messages = prompt_data.get(PROMPT_KEY, [])
         if additional_prompts:
             messages.extend(additional_prompts)
         return ChatPromptTemplate.from_messages(messages)
+
+    def get_prompt_metadata(self, prompt_name: str) -> dict[str, Any]:
+        """Get metadata from a prompt YAML file.
+
+        Args:
+            prompt_name: name of the YAML prompt file.
+
+        Returns:
+            Metadata dictionary from the prompt file, or empty dict if not found.
+        """
+        prompt_data = self.load_prompt_yaml(prompt_name)
+        return prompt_data.get("metadata", {})
