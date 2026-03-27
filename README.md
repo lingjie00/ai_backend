@@ -2,10 +2,45 @@
 
 `ai_backend` is a Python package that provides a collection of commonly used backend utilities for building AI-powered applications. It simplifies tasks such as managing prompts, interacting with language models, and handling multimodal inputs.
 
+## Installation
+
+```bash
+# Base install (Gemini support included)
+pip install .
+
+# With OpenAI support
+pip install ".[openai]"
+
+# With Anthropic support
+pip install ".[anthropic]"
+
+# Dev dependencies
+pip install ".[dev]"
+```
+
+Or using `uv`:
+
+```bash
+uv sync
+uv sync --extra openai
+uv sync --extra anthropic
+```
+
+## Environment Variables
+
+Set the API key for your chosen provider:
+
+| Provider      | Environment Variable   |
+| ------------- | ---------------------- |
+| Google Gemini | `GOOGLE_API_KEY`       |
+| OpenAI        | `OPENAI_API_KEY`       |
+| Anthropic     | `ANTHROPIC_API_KEY`    |
+| Azure OpenAI  | `AZURE_OPENAI_API_KEY` |
+
 ## Features
 
 - **Prompt Management**: Easily create, load, and manage prompts from YAML files.
-- **Language Model Interaction**: A high-level client for interacting with language models, with built-in support for structured (Pydantic) and unstructured outputs.
+- **Language Model Interaction**: A high-level client for interacting with language models (Gemini, OpenAI, Anthropic, Azure OpenAI), with built-in support for structured (Pydantic) and unstructured outputs, streaming, and async.
 - **Multimodal Input Handling**: Utilities to convert images and PDFs into a standardized format for use in language model prompts.
 
 ## Core Components
@@ -30,11 +65,16 @@ new_prompt_path = loader.create_prompt("example_prompt.yaml")
 # Load it as a LangChain ChatPromptTemplate
 prompt_template = loader.load_chat_prompt_template("example_prompt.yaml")
 messages = prompt_template.invoke({"input_variable": "some value"}).to_messages()
+
+# Get metadata from a prompt
+metadata = loader.get_prompt_metadata("example_prompt.yaml")
 ```
 
 ### `LangChainClient`
 
 The `LangChainClient` provides a high-level interface for interacting with large language models (LLMs) using the LangChain framework. It simplifies the process of loading prompts, configuring models, and handling different output formats.
+
+Supported providers: `gemini`, `openai`, `anthropic`, `azure_openai`
 
 **Example: Getting structured output**
 
@@ -57,11 +97,16 @@ client = LangChainClient(
     additional_prompts=[("user", "{context}")],
 )
 
-# Invoke the model and get a validated Pydantic object
+# Invoke the model
 context = {"context": "Write a short story about a brave knight."}
-output = client.model.invoke(input=context)
-output_class = StoryBoard.model_validate(output)
-print(output_class.model_dump_json(indent=2))
+result = client.invoke(context)
+
+# Stream output
+for chunk in client.stream(context):
+    print(chunk)
+
+# Async invoke
+# result = await client.ainvoke(context)
 ```
 
 ### `MessageLoader`
@@ -78,6 +123,10 @@ image_data = MessageLoader.convert_image_to_image_data("path/to/your/image.png")
 
 # Convert the ImageData to a format suitable for LangChain
 langchain_content = MessageLoader.convert_image_data_to_langchain_content(image_data)
+
+# For large images, save to disk to reduce memory usage
+if image_data.is_large:
+    image_data = image_data.save_to_disk("/tmp/images")
 ```
 
 **Example: Converting a PDF to images**

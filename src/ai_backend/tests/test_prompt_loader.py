@@ -66,13 +66,13 @@ class TestPromptLoader(unittest.TestCase):
         prompt_data = {"save_key": "save_value"}
         self.loader.save_prompt_yaml(prompt_name, prompt_data)
 
-        with open(self.test_dir / prompt_name, "r", encoding="utf-8") as f:
+        with open(self.test_dir / prompt_name, encoding="utf-8") as f:
             saved_data = yaml.safe_load(f)
         self.assertEqual(saved_data, prompt_data)
 
         # check if the key order is preserved
         self.loader.save_prompt_yaml("test_order.yaml", {"b": 1, "a": 2})
-        with open(self.test_dir / "test_order.yaml", "r", encoding="utf-8") as f:
+        with open(self.test_dir / "test_order.yaml", encoding="utf-8") as f:
             content = f.read()
             self.assertTrue(content.startswith("b: 1"))
 
@@ -84,7 +84,7 @@ class TestPromptLoader(unittest.TestCase):
         prompt_data = {"save_key": "save_value"}
         self.loader.save_prompt_yaml(prompt_name, prompt_data)
 
-        with open(self.test_dir / (prompt_name + ".yaml"), "r", encoding="utf-8") as f:
+        with open(self.test_dir / (prompt_name + ".yaml"), encoding="utf-8") as f:
             saved_data = yaml.safe_load(f)
         self.assertEqual(saved_data, prompt_data)
 
@@ -127,6 +127,38 @@ class TestPromptLoader(unittest.TestCase):
         )
         expected_messages = prompt_content[PROMPT_KEY] + additional_prompts
         mock_chat_prompt_template.from_messages.assert_called_with(expected_messages)
+
+    def test_load_prompt_yaml_file_not_found(self):
+        """Test that loading a nonexistent YAML file raises FileNotFoundError."""
+        with self.assertRaises(FileNotFoundError):
+            self.loader.load_prompt_yaml("nonexistent_prompt")
+
+    def test_load_chat_prompt_template_missing_prompts_key(self):
+        """Test loading a YAML with no 'prompts' key returns empty messages."""
+        prompt_name = "no_prompts.yaml"
+        self.loader.save_prompt_yaml(prompt_name, {"model_config": {}})
+        with patch("ai_backend.prompt_loader.ChatPromptTemplate") as mock_cpt:
+            self.loader.load_chat_prompt_template(prompt_name)
+            mock_cpt.from_messages.assert_called_with([])
+
+    def test_get_prompt_metadata(self):
+        """Test extracting metadata from a prompt YAML file."""
+        prompt_name = "meta_prompt.yaml"
+        prompt_data = {
+            "metadata": {"name": "Test", "version": "1.0"},
+            PROMPT_KEY: [{"role": "system", "content": "Hello"}],
+        }
+        self.loader.save_prompt_yaml(prompt_name, prompt_data)
+        metadata = self.loader.get_prompt_metadata(prompt_name)
+        self.assertEqual(metadata["name"], "Test")
+        self.assertEqual(metadata["version"], "1.0")
+
+    def test_get_prompt_metadata_missing(self):
+        """Test that get_prompt_metadata returns empty dict when no metadata."""
+        prompt_name = "no_meta.yaml"
+        self.loader.save_prompt_yaml(prompt_name, {PROMPT_KEY: []})
+        metadata = self.loader.get_prompt_metadata(prompt_name)
+        self.assertEqual(metadata, {})
 
 
 if __name__ == "__main__":
