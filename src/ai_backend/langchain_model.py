@@ -12,6 +12,7 @@ class LLMProvider(Enum):
     GEMINI = "gemini"
     ANTHROPIC = "anthropic"
     AZURE_OPENAI = "azure_openai"
+    VERTEX_AI = "vertex_ai"
 
 
 class AIModelConfig(BaseModel):

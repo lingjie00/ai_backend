@@ -36,6 +36,25 @@ Set the API key for your chosen provider:
 | OpenAI        | `OPENAI_API_KEY`       |
 | Anthropic     | `ANTHROPIC_API_KEY`    |
 | Azure OpenAI  | `AZURE_OPENAI_API_KEY` |
+| Vertex AI     | `GOOGLE_CLOUD_PROJECT` (and credentials) |
+
+### Vertex AI Credentials
+
+Google Vertex AI does not use a simple API key. Instead, it uses Google Cloud's authentication mechanisms. The easiest way to provide credentials is to use a Service Account:
+
+1.  Create a Service Account in your Google Cloud Project with the `Vertex AI User` role.
+2.  Download the Service Account JSON key file.
+3.  Set the `GOOGLE_APPLICATION_CREDENTIALS` environment variable to the path of the JSON file:
+    ```bash
+    export GOOGLE_APPLICATION_CREDENTIALS="/path/to/your/service-account-key.json"
+    ```
+
+Alternatively, you can provide the Project ID explicitly by setting the `GOOGLE_CLOUD_PROJECT` environment variable:
+```bash
+export GOOGLE_CLOUD_PROJECT="your-project-id"
+```
+
+If you are running in an environment already authenticated with Google Cloud (like a Compute Engine instance or after running `gcloud auth application-default login`), the client will pick up the credentials and project automatically.
 
 ## Features
 
@@ -74,7 +93,7 @@ metadata = loader.get_prompt_metadata("example_prompt.yaml")
 
 The `LangChainClient` provides a high-level interface for interacting with large language models (LLMs) using the LangChain framework. It simplifies the process of loading prompts, configuring models, and handling different output formats.
 
-Supported providers: `gemini`, `openai`, `anthropic`, `azure_openai`
+Supported providers: `gemini`, `openai`, `anthropic`, `azure_openai`, `vertex_ai`
 
 **Example: Getting structured output**
 
