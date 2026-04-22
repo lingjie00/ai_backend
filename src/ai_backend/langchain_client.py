@@ -16,6 +16,11 @@ except ImportError:
     ChatGoogleGenerativeAI = None  # type: ignore
 
 try:
+    from langchain_google_vertexai import ChatVertexAI  # type: ignore
+except ImportError:
+    ChatVertexAI = None  # type: ignore
+
+try:
     from langchain_openai import ChatOpenAI  # type: ignore
 except ImportError:
     ChatOpenAI = None  # type: ignore
@@ -212,12 +217,32 @@ class LangChainClient:
             client_kwargs["api_key"] = api_key
         return AzureChatOpenAI(**client_kwargs)
 
+    def _create_vertex_client(self, api_key: str) -> Any:
+        """Create a Google Vertex AI client based on the model configuration."""
+        if ChatVertexAI is None:
+            raise ImportError(
+                "ChatVertexAI is not available. "
+                "Please install langchain-google-vertexai: "
+                "pip install langchain-google-vertexai"
+            )
+        client_kwargs = self._get_client_kwargs()
+        # Vertex AI uses GOOGLE_APPLICATION_CREDENTIALS for authentication.
+        # We can also pass project and location explicitly.
+        project = os.getenv("GOOGLE_CLOUD_PROJECT")
+        if project:
+            client_kwargs["project"] = project
+        location = os.getenv("GOOGLE_CLOUD_LOCATION")
+        if location:
+            client_kwargs["location"] = location
+        return ChatVertexAI(**client_kwargs)
+
     # Provider registry: maps LLMProvider enum values to factory methods
     _PROVIDER_REGISTRY: dict[LLMProvider, str] = {
         LLMProvider.GEMINI: "_create_google_client",
         LLMProvider.OPENAI: "_create_openai_client",
         LLMProvider.ANTHROPIC: "_create_anthropic_client",
         LLMProvider.AZURE_OPENAI: "_create_azure_openai_client",
+        LLMProvider.VERTEX_AI: "_create_vertex_client",
     }
 
     def _create_client(self, api_key: str = "") -> Any:
