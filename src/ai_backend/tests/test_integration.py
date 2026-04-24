@@ -46,7 +46,7 @@ class TestIntegration(unittest.TestCase):
 
     @patch("ai_backend.langchain_client.ChatGoogleGenerativeAI")
     def test_end_to_end_structured_output(self, mock_chat_google: MagicMock):
-        """Test full flow: load prompt → create client → invoke → get structured output."""
+        """Test full flow: load prompt → client → invoke → structured output."""
         # Set up mock model
         mock_model = MagicMock()
         mock_chat_google.return_value = mock_model

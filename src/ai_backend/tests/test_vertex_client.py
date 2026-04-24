@@ -29,11 +29,11 @@ class TestVertexClient(unittest.TestCase):
             self.prompt_template
         )
 
-    @patch("ai_backend.langchain_client.ChatVertexAI")
-    def test_init_with_vertex_client(self, mock_chat_vertex: MagicMock):
+    @patch("ai_backend.langchain_client.ChatGoogleGenerativeAI")
+    def test_init_with_vertex_client(self, mock_chat_google: MagicMock):
         """Test client initialization with a Vertex AI model."""
         mock_vanila_model = MagicMock()
-        mock_chat_vertex.return_value = mock_vanila_model
+        mock_chat_google.return_value = mock_vanila_model
         self.prompt_template.__or__.return_value = "prompt | model"
 
         client = LangChainClient(
@@ -41,21 +41,22 @@ class TestVertexClient(unittest.TestCase):
         )
 
         self.mock_prompt_loader.load_prompt_yaml.assert_called_with(self.model_name)
-        mock_chat_vertex.assert_called_once_with(
+        mock_chat_google.assert_called_once_with(
             model="gemini-1.5-pro",
             temperature=0.5,
             max_tokens=500,
+            vertexai=True,
         )
         self.assertEqual(client.model, "prompt | model")
 
-    @patch("ai_backend.langchain_client.ChatVertexAI", None)
-    def test_init_without_vertex_package(self):
-        """Test that initialization fails when langchain-google-vertexai is not installed."""
+    @patch("ai_backend.langchain_client.ChatGoogleGenerativeAI", None)
+    def test_init_without_google_package(self):
+        """Test that initialization fails when langchain-google-genai is missing."""
         with self.assertRaises(ImportError) as cm:
             LangChainClient(
                 prompt_loader=self.mock_prompt_loader, model_name=self.model_name
             )
-        self.assertIn("ChatVertexAI is not available", str(cm.exception))
+        self.assertIn("ChatGoogleGenerativeAI is not available", str(cm.exception))
 
 
 if __name__ == "__main__":
