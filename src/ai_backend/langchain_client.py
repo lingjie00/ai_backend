@@ -16,11 +16,6 @@ except ImportError:
     ChatGoogleGenerativeAI = None  # type: ignore
 
 try:
-    from langchain_google_vertexai import ChatVertexAI  # type: ignore
-except ImportError:
-    ChatVertexAI = None  # type: ignore
-
-try:
     from langchain_openai import ChatOpenAI  # type: ignore
 except ImportError:
     ChatOpenAI = None  # type: ignore
@@ -219,11 +214,11 @@ class LangChainClient:
 
     def _create_vertex_client(self, api_key: str) -> Any:
         """Create a Google Vertex AI client based on the model configuration."""
-        if ChatVertexAI is None:
+        if ChatGoogleGenerativeAI is None:
             raise ImportError(
-                "ChatVertexAI is not available. "
-                "Please install langchain-google-vertexai: "
-                "pip install langchain-google-vertexai"
+                "ChatGoogleGenerativeAI is not available. "
+                "Please install langchain-google-genai: "
+                "pip install langchain-google-genai"
             )
         client_kwargs = self._get_client_kwargs()
         # Vertex AI uses GOOGLE_APPLICATION_CREDENTIALS for authentication.
@@ -234,7 +229,10 @@ class LangChainClient:
         location = os.getenv("GOOGLE_CLOUD_LOCATION")
         if location:
             client_kwargs["location"] = location
-        return ChatVertexAI(**client_kwargs)
+
+        # Use the newer unified class with vertexai=True
+        client_kwargs["vertexai"] = True
+        return ChatGoogleGenerativeAI(**client_kwargs)
 
     # Provider registry: maps LLMProvider enum values to factory methods
     _PROVIDER_REGISTRY: dict[LLMProvider, str] = {
