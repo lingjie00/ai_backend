@@ -27,6 +27,7 @@ dev = [
     "pytest",
     "ruff",
     "mypy",
+    "reportlab>=4.0.0",
 ]
 
 [build-system]
