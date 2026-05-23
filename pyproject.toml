@@ -13,6 +13,7 @@ dependencies = [
     "pillow>=10.0.0",
     "pyyaml>=6.0.0",
     "pymupdf>=1.24.0",
+    "markitdown[all]>=0.1.5",
 ]
 
 [project.optional-dependencies]
@@ -26,6 +27,7 @@ dev = [
     "pytest",
     "ruff",
     "mypy",
+    "reportlab>=4.0.0",
 ]
 
 [build-system]
@@ -50,3 +52,8 @@ testpaths = ["src"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
+
+[dependency-groups]
+dev = [
+    "reportlab>=4.5.1",
+]
