@@ -22,6 +22,9 @@ from ai_backend.message.pdf_loader import (
     CONVERTED_IMAGE_MIME_TYPE,
     encode_pdf_to_images_bytes,
 )
+import typing
+import tempfile
+from markitdown import MarkItDown
 
 
 def is_base64_regex(s: str) -> bool:
@@ -35,6 +38,22 @@ def is_base64_regex(s: str) -> bool:
 
 class MessageLoader:
     """Utility class for loading and encoding files from various sources."""
+
+    @staticmethod
+    def convert_to_text(inputs: str | Path | bytes, **kwargs: typing.Any) -> str:
+        """Converts various input types to a Markdown string using MarkItDown."""
+        md = MarkItDown(**kwargs)
+        if isinstance(inputs, bytes):
+            with tempfile.NamedTemporaryFile(delete=False) as f:
+                f.write(inputs)
+                f.flush()
+                temp_path = f.name
+            result = md.convert(temp_path)
+            Path(temp_path).unlink(missing_ok=True)
+            return result.text_content
+        else:
+            result = md.convert(str(inputs))
+            return result.text_content
 
     @staticmethod
     def optimize_image_data(
@@ -58,8 +77,12 @@ class MessageLoader:
         dpi: int = 300,
         optimize: bool = True,
         optimize_max_dimension: int = 1024,
-    ) -> list[ImageData]:
-        """Converts PDF input to a list of ImageData objects, one per page."""
+        as_text: bool = False,
+        **kwargs: typing.Any
+    ) -> list[ImageData] | str:
+        """Converts PDF input to a list of ImageData objects, one per page, or directly to Markdown text."""
+        if as_text:
+            return MessageLoader.convert_to_text(pdf_input, **kwargs)
         image_bytes_list = encode_pdf_to_images_bytes(pdf_input, dpi)
         image_data_list = []
         for i, image_bytes in enumerate(image_bytes_list):
@@ -71,6 +94,7 @@ class MessageLoader:
                 optimize=optimize,
                 optimize_max_dimension=optimize_max_dimension,
             )
+            assert isinstance(image_data, ImageData)
             image_data_list.append(image_data)
         return image_data_list
 
@@ -82,8 +106,51 @@ class MessageLoader:
         page_number: int = 1,
         optimize: bool = True,
         optimize_max_dimension: int = 1024,
-    ) -> ImageData:
-        """Converts various image input types to an ImageData object."""
+        as_text: bool = False,
+        **kwargs: typing.Any
+    ) -> ImageData | str:
+        """Converts various image input types to an ImageData object, or directly to Markdown text."""
+        if as_text:
+            if isinstance(inputs, Image.Image):
+                with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as f:
+                    inputs.save(f, format="PNG")
+                    temp_path = f.name
+                result = MessageLoader.convert_to_text(temp_path, **kwargs)
+                Path(temp_path).unlink(missing_ok=True)
+                return result
+            else:
+                input_str = str(inputs)
+
+                # Check for base64
+                if input_str.startswith("data:image"):
+                    if "," in input_str:
+                        b64_data = input_str.split(",", 1)[1].strip()
+                        if is_base64_regex(b64_data):
+                            import base64
+                            b64_data += "=" * ((4 - len(b64_data) % 4) % 4)
+                            decoded_bytes = base64.b64decode(b64_data)
+                            with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as f:
+                                f.write(decoded_bytes)
+                                f.flush()
+                                temp_path = f.name
+                            result = MessageLoader.convert_to_text(temp_path, **kwargs)
+                            Path(temp_path).unlink(missing_ok=True)
+                            return result
+                elif is_base64_regex(input_str.strip()):
+                    b64_data = input_str.strip()
+                    import base64
+                    b64_data += "=" * ((4 - len(b64_data) % 4) % 4)
+                    decoded_bytes = base64.b64decode(b64_data)
+                    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as f:
+                        f.write(decoded_bytes)
+                        f.flush()
+                        temp_path = f.name
+                    result = MessageLoader.convert_to_text(temp_path, **kwargs)
+                    Path(temp_path).unlink(missing_ok=True)
+                    return result
+
+                return MessageLoader.convert_to_text(inputs, **kwargs)
+
         not_base64 = not is_base64_regex(str(inputs))
         if isinstance(inputs, (Path, str)) and not_base64:
             filepath = Path(inputs)

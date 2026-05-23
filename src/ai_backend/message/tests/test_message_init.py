@@ -202,5 +202,73 @@ class TestMessage(unittest.TestCase):
             self.assertFalse(optimized.selected)
 
 
+
+    def test_convert_to_text_with_pdf(self) -> None:
+        """Test converting PDF to text using MarkItDown."""
+        # Create a dummy PDF file
+        from reportlab.pdfgen import canvas
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_pdf_file:
+            c = canvas.Canvas(temp_pdf_file.name)
+            c.drawString(100, 100, "Hello World from PDF")
+            c.save()
+            pdf_path = temp_pdf_file.name
+
+        try:
+            # Test direct string conversion
+            text_result = MessageLoader.convert_pdf_to_image_data(pdf_path, as_text=True)
+            self.assertIsInstance(text_result, str)
+            self.assertIn("Hello World from PDF", text_result)
+
+            # Test bytes conversion
+            with open(pdf_path, "rb") as f:
+                pdf_bytes = f.read()
+            text_result_bytes = MessageLoader.convert_pdf_to_image_data(pdf_bytes, as_text=True)
+            self.assertIsInstance(text_result_bytes, str)
+            self.assertIn("Hello World from PDF", text_result_bytes)
+        finally:
+            Path(pdf_path).unlink(missing_ok=True)
+
+    def test_convert_to_text_with_image(self) -> None:
+        """Test converting Image to text using MarkItDown."""
+        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as temp_image_file:
+            img = Image.new("RGB", (100, 100), color="blue")
+            img.save(temp_image_file, format="PNG")
+            image_path = temp_image_file.name
+
+        try:
+            # Test image path conversion
+            text_result = MessageLoader.convert_image_to_image_data(image_path, as_text=True)
+            self.assertIsInstance(text_result, str)
+
+            # Test PIL image conversion
+            text_result_pil = MessageLoader.convert_image_to_image_data(img, as_text=True)
+            self.assertIsInstance(text_result_pil, str)
+
+            # Test bytes conversion
+            with open(image_path, "rb") as f:
+                image_bytes = f.read()
+            text_result_bytes = MessageLoader.convert_image_to_image_data(image_bytes, as_text=True)
+            self.assertIsInstance(text_result_bytes, str)
+        finally:
+            Path(image_path).unlink(missing_ok=True)
+
+
+
+    def test_convert_to_text_with_base64_image(self) -> None:
+        """Test converting base64 encoded image to text using MarkItDown."""
+        # Create a simple valid base64 image (1x1 transparent GIF)
+        b64_image = "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+
+        try:
+            # We don't really expect useful text from a 1x1 gif, but it shouldn't crash
+            text_result = MessageLoader.convert_image_to_image_data(b64_image, as_text=True)
+            self.assertIsInstance(text_result, str)
+
+            # Test with data uri prefix
+            text_result_uri = MessageLoader.convert_image_to_image_data("data:image/gif;base64," + b64_image, as_text=True)
+            self.assertIsInstance(text_result_uri, str)
+        except Exception as e:
+            self.fail(f"convert_image_to_image_data with base64 string and as_text=True failed with: {e}")
+
 if __name__ == "__main__":
     unittest.main()
