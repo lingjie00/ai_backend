@@ -12,8 +12,10 @@ from langchain_core.runnables import Runnable
 
 try:
     from langchain_google_genai import ChatGoogleGenerativeAI  # type: ignore
+    from langchain_google_genai import MediaResolution as GoogleMediaResolution
 except ImportError:
     ChatGoogleGenerativeAI = None  # type: ignore
+    GoogleMediaResolution = None  # type: ignore
 
 try:
     from langchain_openai import ChatOpenAI  # type: ignore
@@ -152,6 +154,23 @@ class LangChainClient:
         }
         return client_kwargs
 
+    def _get_gemini_client_kwargs(self) -> dict[str, Any]:
+        """Get client kwargs plus the Gemini-only fields that are set.
+
+        Unset fields are left out so the model's own defaults apply.
+
+        Returns:
+            Keyword arguments for ChatGoogleGenerativeAI.
+        """
+        client_kwargs = self._get_client_kwargs()
+        if self.model_config.thinking_level is not None:
+            client_kwargs["thinking_level"] = self.model_config.thinking_level.value
+        if self.model_config.media_resolution is not None:
+            client_kwargs["media_resolution"] = GoogleMediaResolution[
+                f"MEDIA_RESOLUTION_{self.model_config.media_resolution.name}"
+            ]
+        return client_kwargs
+
     def _create_google_client(self, api_key: str) -> Any:
         """Create a Google Gemini client based on the model configuration."""
         if ChatGoogleGenerativeAI is None:
@@ -162,7 +181,7 @@ class LangChainClient:
             )
         if not api_key:
             api_key = os.getenv("GOOGLE_API_KEY", "")
-        client_kwargs = self._get_client_kwargs()
+        client_kwargs = self._get_gemini_client_kwargs()
         client_kwargs["api_key"] = api_key
         client_kwargs["convert_system_message_to_human"] = True
         return ChatGoogleGenerativeAI(**client_kwargs)
@@ -220,7 +239,7 @@ class LangChainClient:
                 "Please install langchain-google-genai: "
                 "pip install langchain-google-genai"
             )
-        client_kwargs = self._get_client_kwargs()
+        client_kwargs = self._get_gemini_client_kwargs()
         # Vertex AI uses GOOGLE_APPLICATION_CREDENTIALS for authentication.
         # We can also pass project and location explicitly.
         project = os.getenv("GOOGLE_CLOUD_PROJECT")
