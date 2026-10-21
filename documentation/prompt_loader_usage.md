@@ -46,6 +46,8 @@ model_config:
   model_name: The name of the AI model to use (e.g., 'gpt-3.5-turbo').
   temperature: A float value between 0 and 1 controlling outcome randomness.
   max_tokens: The maximum number of tokens to generate in the response.
+  thinking_level: (Optional, Gemini/Vertex AI only) minimal, low, medium, or high. Omit to use the model default.
+  media_resolution: (Optional, Gemini/Vertex AI only) low, medium, or high. Omit to use the model default.
 examples:
   - input: An example input for the prompt.
     output: The expected output for the example input.
